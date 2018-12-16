@@ -65,7 +65,7 @@ const int joyY = A0;
 int valX, valY;
 int count = 0;
 int lives = 3; 
-/*void levelOne(){
+void levelOne(){
   for (int i = 0; i< 8; i++){
     lc.setRow(0, i, up[i]);
   if (valX > 600) 
@@ -99,8 +99,7 @@ int lives = 3;
   if (lives>0)
      lcd.print("Level up!");
   
-}*/
-
+}
 void setup() {
   lc.shutdown(0, false); 
   lc.setIntensity(0, 2); 
@@ -120,37 +119,6 @@ void setup() {
 void loop() {
   valX = analogRead(joyX);
   valY = analogRead(joyY);
-    for (int i = 0; i< 8; i++){
-    lc.setRow(0, i, up[i]);
-  if (valX > 600) 
-    count++;
-    else lives--;
-    delay(300);
-  }
-  
-  for (int i = 0; i< 8; i++){
-    lc.setRow(0, i, down[i]);
-  if (valX < 300) 
-    count++;
-    else lives--;
-    delay(300);
-  }
-  for (int i = 0; i< 8; i++){
-    lc.setRow(0, i, left[i]);
-  if (valY <300) 
-    count++;
-    else lives--;
-    delay(300);
-  }
-  
-  for (int i = 0; i< 8; i++){
-    lc.setRow(0, i, right[i]);
-  if (valX > 600) 
-    count++;
-    else lives--;
-    delay(300); 
-  }
-  if (lives>0)
-     lcd.print("Level up!");
+  levelOne();
   lc.clearDisplay(0);
 }
