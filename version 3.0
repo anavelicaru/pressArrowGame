@@ -1,0 +1,296 @@
+#include "LedControl.h"
+#include <LiquidCrystal.h>
+LedControl lc = LedControl(12, 11, 10, 1);
+LiquidCrystal lcd(2, 3, 4, 5, 6, 7);
+#define V0_PIN 9
+#define JOY_X A0
+#define JOY_Y A1
+
+byte Up[8] = {
+  B00011000,
+  B00111100,
+  B01011010,
+  B10011001,
+  B00011000,
+  B00011000,
+  B00011000,
+  B00011000,
+};
+
+byte Down[8] = {
+  B00011000,
+  B00011000,
+  B00011000,
+  B00011000,
+  B10011001,
+  B01011010,
+  B00111100,
+  B00011000,
+};
+
+byte Right[8] = {
+  B00010000,
+  B00001000,
+  B00000100,
+  B11111111,
+  B11111111,
+  B00000100,
+  B00001000,
+  B00010000,
+};
+
+byte Left[8] = {
+  B00010000,
+  B00100000,
+  B01000000,
+  B11111111,
+  B11111111,
+  B01000000,
+  B00100000,
+  B00010000,
+};
+
+byte heart[8] = {
+  B00000000,
+  B01100110,
+  B11111111,
+  B11111111,
+  B11111111,
+  B01111110,
+  B00111100,
+  B00011000,
+};
+
+byte ok[8] = {
+  B00000000,
+  B00100100,
+  B00100100,
+  B00100100,
+  B00000000,
+  B01000010,
+  B00100100,
+  B00011000,
+};
+
+byte no[8] = {
+  B10000001,
+  B01000010,
+  B00100100,
+  B00011000,
+  B00011000,
+  B00100100,
+  B01000010,
+  B10000001,
+};
+
+byte S[8] = {
+  B00000,
+  B01010,
+  B00000,
+  B00000,
+  B01110,
+  B10001,
+  B00000,
+  B00000,
+};
+
+const int joyX =  A1;
+const int joyY = A0;
+int joyMoved = 0;
+int valX, valY;
+int count = 0;
+int lives = 3;
+
+unsigned long startMillis, currentMillis, lcdMillis, startLcdMillis;
+const unsigned long period;
+const int MAX_LEVEL = 100;
+int sequence[MAX_LEVEL], player_sequence[MAX_LEVEL], level = 1, score = 10;
+
+void success()
+{
+
+  int i;
+
+  for ( i = 0; i < 8; i++ )
+    lc.setColumn(0, i, ok[i]);
+  delay(500);
+  lc.clearDisplay(0);
+  if (level < MAX_LEVEL) {
+    level++;
+    score = score + 10;
+    if (level % 5 == 0)
+      score = score + 500; // bonus, hehe
+  }
+}
+
+void notOk()
+{
+  int i;
+
+  for ( i = 0; i < 8; i++ )
+    lc.setColumn(0, i, no[i]);
+  delay(500);
+  lc.clearDisplay(0);
+  level = 1;
+  score = 10;
+  lcdMillis = millis();
+  if (lcdMillis - startLcdMillis >= 1500) {
+    lcd.clear();
+    lcd.setCursor(0, 2);
+    lcd.print("Don't give up");
+    lcd.print(char(2));
+    startLcdMillis = lcdMillis;
+  }
+}
+
+void up()
+{
+  int i;
+
+  for ( i = 0; i < 8; i++ )
+    lc.setColumn(0, i, Up[i]);
+  delay(500);
+  lc.clearDisplay(0);
+}
+
+void down()
+{
+  int i;
+
+  for ( i = 0; i < 8; i++ )
+    lc.setColumn(0, i, Down[i]);
+  delay(500);
+  lc.clearDisplay(0);
+}
+
+void left()
+{
+  int i;
+
+  for ( i = 0; i < 8; i++ )
+    lc.setColumn(0, i, Left[i]);
+  delay(500);
+  lc.clearDisplay(0);
+}
+
+void right()
+{
+  int i;
+
+  for ( i = 0; i < 8; i++ )
+    lc.setColumn(0, i, Right[i]);
+  delay(500);
+  lc.clearDisplay(0);
+}
+
+
+void generateSequence()
+{
+  randomSeed(millis());
+  int i;
+  for ( i = 0; i < level; i++)
+    sequence[i] = random(1, 5);
+}
+
+
+void showSequence()
+{
+  int i;
+
+  for ( i = 0; i < level; i++) {
+    currentMillis = millis();
+    if ( currentMillis - startMillis >= 500 && sequence[i] == 1)
+      up();
+    if ( currentMillis - startMillis >= 500 && sequence[i] == 2)
+      down();
+    if ( currentMillis - startMillis >= 500 && sequence[i] == 3)
+      left();
+    if ( currentMillis - startMillis >= 500 && sequence[i] == 4)
+      right();
+    startMillis = currentMillis;
+  }
+  Serial.println(sequence[i]);
+}
+
+bool checkDir(int dir, int index)
+{ int i;
+  if ((dir & sequence[i]) == sequence[i])
+    return true;
+  return false;
+
+  // one liner: return (dir & sequence[i]) == sequence[i]);
+  // fac si pe biti si daca e pe
+  // diagonala, sau in directia buna, returneaza true
+}
+
+void getUserInput(int index)
+{
+  int dir = 0;
+
+  valX = analogRead(joyX);
+  valY = analogRead(joyY);
+  // 0001
+  if (valY > 680)
+    dir |= 1;
+
+  // 0010
+  if (valY < 340)
+    dir |= 2;
+
+  // 0100
+  if (valX > 680)
+    dir |= 4;
+
+  // 1000
+  if (valX < 340)
+    dir |= 8;
+
+if (dir!=0)
+  if (checkDir(dir, index) == true) {
+    if (level > index) // sequence length greater than index
+      getUserInput(index++);
+    else level++;
+  }else notOk();
+}
+
+void startGame()
+{
+  generateSequence();
+  showSequence();
+  getUserInput(0);
+}
+
+
+void setup()
+{
+  pinMode(joyX, INPUT);
+  pinMode(joyY, INPUT);
+  Serial.begin(9600);
+  lcd.createChar(1, heart);
+  //lcd.createChar(2, S);
+  lcd.begin(16, 2);
+  lcd.clear();
+  lcd.setCursor(2, 1);
+  lc.shutdown(0, false);
+  lc.setIntensity(0, 7);
+  lc.clearDisplay(0);
+  startMillis = millis();
+  startLcdMillis = millis();
+  pinMode(V0_PIN, OUTPUT);
+  analogWrite(V0_PIN, 90);
+}
+
+
+void loop()
+{
+  lcdMillis = millis();
+  if ( lcdMillis - startLcdMillis >= 1000 ) {
+    lcd.clear();
+    lcd.print("Start");
+    lcd.print(char(1));
+    lcd.print(char(1));
+  }
+  startGame();
+  showSequence();
+  getUserInput(0);
+}
